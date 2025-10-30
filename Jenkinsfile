@@ -10,7 +10,8 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'git@github.com:the-vish-bot/java.git'
+                git branch: 'main', url: 'https://github.com/the-vish-bot/java.git', credentialsId: '9b5a4a1a-56c0-41a2-9947-a7708abbb720'
+
             }
         }
 
