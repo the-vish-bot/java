@@ -2,7 +2,7 @@ pipeline {
     agent any
     environment {
         AWS_DEFAULT_REGION = 'us-east-2'
-        ECR_REPO = '<account-id>.dkr.ecr.us-east-2.amazonaws.com/java-sample'
+        ECR_REPO = '042769662414.dkr.ecr.us-east-2.amazonaws.com/vishwesh/java'
         IMAGE_TAG = "${env.BUILD_NUMBER}"   // Unique tag for each build
     }
     stages {
@@ -44,8 +44,8 @@ pipeline {
                 withAWS(credentials: 'aws-credentials-id', region: "${AWS_DEFAULT_REGION}") {
                     sh """
                         aws ecs update-service \
-                            --cluster my-fargate-cluster \
-                            --service java-sample-service \
+                            --cluster vishwesh-fargate-cluster \
+                            --service vishwesh-service \
                             --force-new-deployment \
                             --region $AWS_DEFAULT_REGION
                     """
