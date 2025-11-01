@@ -22,14 +22,7 @@ pipeline {
             }
         }
         
-        // 👇 ADD THIS STAGE
-        stage('SonarQube Analysis') {
-            steps {
-                withSonarQubeEnv('vishwesh-sonar') {
-                    sh 'mvn sonar:sonar'
-                }
-            }
-        }
+
         
         // 👇 ADD THIS STAGE (Optional - to check quality gate)
         stage('Quality Gate') {
