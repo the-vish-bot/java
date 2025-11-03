@@ -57,10 +57,6 @@ pipeline {
                             sh """
                                 aws ecs update-service --cluster vishwesh-fargate-cluster --service vishwesh-java-task-service-verification --force-new-deployment
                             """
-                        } else if (BRANCH_NAME == 'main') {
-                            sh """
-                                aws ecs update-service --cluster vishwesh-fargate-cluster --service vishwesh-java-task-service-production --force-new-deployment
-                            """
                         } else {
                             echo "Deploying branch '${BRANCH_NAME}' to default service"
                             sh """
