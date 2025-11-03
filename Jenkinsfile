@@ -4,7 +4,7 @@ pipeline {
     environment {
         AWS_DEFAULT_REGION = 'us-east-2'
         ECR_REPO = '042769662414.dkr.ecr.us-east-2.amazonaws.com/vishwesh/java'
-        IMAGE_TAG = '' 
+        IMAGE_TAG = ''  // Placeholder, will be set later
     }
 
     stages {
@@ -19,9 +19,20 @@ pipeline {
         stage('Set Version') {
             steps {
                 script {
+                    // Extract version from version.json using jq
                     def version = sh(script: "cat version.json | jq -r .version", returnStdout: true).trim()
-                    echo "Project version found: ${version}"
-                    env.IMAGE_TAG = version    
+                    echo " Project version found in version.json: ${version}"
+                    env.PROJECT_VERSION = version
+                }
+            }
+        }
+
+        stage('Set Image Tag') {
+            steps {
+                script {
+                    // Combine version + build number for uniqueness
+                    env.IMAGE_TAG = "${PROJECT_VERSION}-${BUILD_NUMBER}"
+                    echo " Docker Image Tag set to: ${IMAGE_TAG}"
                 }
             }
         }
@@ -34,7 +45,7 @@ pipeline {
 
         // stage('Publish Coverage Report') {
         //     steps {
-        //         publishCoverage adapters: [jacocoAdapter('**/target/site/jacoco/jacoco.xml')], 
+        //         publishCoverage adapters: [jacocoAdapter('**/target/site/jacoco/jacoco.xml')],
         //                         sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
         //     }
         // }
@@ -63,8 +74,13 @@ pipeline {
             steps {
                 withAWS(credentials: 'aws-credentials-id', region: "${AWS_DEFAULT_REGION}") {
                     sh """
+                        echo " Logging in to AWS ECR..."
                         aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${ECR_REPO}
+
+                        echo " Tagging image as ${ECR_REPO}:${IMAGE_TAG}"
                         docker tag samplejava:${IMAGE_TAG} ${ECR_REPO}:${IMAGE_TAG}
+
+                        echo "Pushing image to ECR..."
                         docker push ${ECR_REPO}:${IMAGE_TAG}
                     """
                 }
@@ -93,10 +109,11 @@ pipeline {
 
     post {
         success {
-            echo " Build and deployment completed successfully with image tag: ${IMAGE_TAG}"
+            echo " Build and deployment completed successfully!"
+            echo " Final image: ${ECR_REPO}:${IMAGE_TAG}"
         }
         failure {
-            echo "Build or deployment failed. Check logs!"
+            echo " Build or deployment failed. Check logs!"
         }
     }
 }
