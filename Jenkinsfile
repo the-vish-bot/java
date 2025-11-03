@@ -4,16 +4,16 @@ pipeline {
     environment {
         AWS_DEFAULT_REGION = 'us-east-2'
         ECR_REPO = '042769662414.dkr.ecr.us-east-2.amazonaws.com/vishwesh/java'
-        IMAGE_TAG = "${BUILD_NUMBER}" 
+        IMAGE_TAG = "${BUILD_NUMBER}" // Unique tag for each build
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git url: 'https://github.com/the-vish-bot/java.git', credentialsId: '9b5a4a1a-56c0-41a2-9947-a7708abbb720'
                 script {
-                    echo "Checked out branch: ${env.BRANCH_NAME}"
-                    echo "Build number: ${env.BUILD_NUMBER}"
+                    git branch: 'main', url: 'https://github.com/the-vish-bot/java.git', credentialsId: '9b5a4a1a-56c0-41a2-9947-a7708abbb720'
+                    env.BRANCH_NAME = sh(script: "git rev-parse --abbrev-ref HEAD", returnStdout: true).trim()
+                    echo "Branch name is ${env.BRANCH_NAME} and build number is ${env.BUILD_NUMBER}"
                 }
             }
         }
@@ -54,28 +54,23 @@ pipeline {
             steps {
                 withAWS(credentials: 'aws-credentials-id', region: "${AWS_DEFAULT_REGION}") {
                     script {
-                        switch (env.BRANCH_NAME) {
-                            case 'development':
-                                sh """
-                                    aws ecs update-service --cluster vishwesh-fargate-cluster --service vishwesh-java-task-service-development --force-new-deployment
-                                """
-                                break
-                            case 'qa':
-                                sh """
-                                    aws ecs update-service --cluster vishwesh-fargate-cluster --service vishwesh-java-task-service-qa --force-new-deployment
-                                """
-                                break
-                            case 'verification':
-                                sh """
-                                    aws ecs update-service --cluster vishwesh-fargate-cluster --service vishwesh-java-task-service-verification --force-new-deployment
-                                """
-                                break
-                            default:
-                                echo "Deploying '${env.BRANCH_NAME}' to default service"
-                                sh """
-                                    aws ecs update-service --cluster vishwesh-fargate-cluster --service vishwesh-service --force-new-deployment
-                                """
-                                break
+                        if (env.BRANCH_NAME == 'development') {
+                            sh """
+                                aws ecs update-service --cluster vishwesh-fargate-cluster --service vishwesh-java-task-service-development --force-new-deployment
+                            """
+                        } else if (env.BRANCH_NAME == 'qa') {
+                            sh """
+                                aws ecs update-service --cluster vishwesh-fargate-cluster --service vishwesh-java-task-service-qa --force-new-deployment
+                            """
+                        } else if (env.BRANCH_NAME == 'verification') {
+                            sh """
+                                aws ecs update-service --cluster vishwesh-fargate-cluster --service vishwesh-java-task-service-verification --force-new-deployment
+                            """
+                        } else {
+                            echo "Deploying branch '${env.BRANCH_NAME}' to default service"
+                            sh """
+                                aws ecs update-service --cluster vishwesh-fargate-cluster --service vishwesh-service --force-new-deployment
+                            """
                         }
                     }
                 }
@@ -85,10 +80,10 @@ pipeline {
 
     post {
         success {
-            echo "Build and deployment completed successfully for branch: ${env.BRANCH_NAME}"
+            echo "Build and deployment completed successfully!"
         }
         failure {
-            echo "Build or deployment failed for branch: ${env.BRANCH_NAME}. Check logs!"
+            echo "Build or deployment failed. Check logs!"
         }
     }
 }
