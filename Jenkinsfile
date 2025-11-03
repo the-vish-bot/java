@@ -1,10 +1,12 @@
 pipeline {
     agent { label 'vish-agent' }
+
     environment {
         AWS_DEFAULT_REGION = 'us-east-2'
         ECR_REPO = '042769662414.dkr.ecr.us-east-2.amazonaws.com/vishwesh/java'
-        IMAGE_TAG = "${BUILD_NUMBER}"
+        IMAGE_TAG = '' 
     }
+
     stages {
         stage('Checkout') {
             steps {
@@ -17,9 +19,9 @@ pipeline {
         stage('Set Version') {
             steps {
                 script {
-                    def version = sh(script: "cat version.json | jq -r '.version'", returnStdout: true).trim()
+                    def version = sh(script: "cat version.json | jq -r .version", returnStdout: true).trim()
                     echo "Project version found: ${version}"
-                    env.IMAGE_TAG = version
+                    env.IMAGE_TAG = version    
                 }
             }
         }
@@ -74,22 +76,14 @@ pipeline {
                 withAWS(credentials: 'aws-credentials-id', region: "${AWS_DEFAULT_REGION}") {
                     script {
                         if (BRANCH_NAME == 'development') {
-                            sh """
-                                aws ecs update-service --cluster vishwesh-fargate-cluster --service vishwesh-java-task-service-development --force-new-deployment
-                            """
+                            sh "aws ecs update-service --cluster vishwesh-fargate-cluster --service vishwesh-java-task-service-development --force-new-deployment"
                         } else if (BRANCH_NAME == 'qa') {
-                            sh """
-                                aws ecs update-service --cluster vishwesh-fargate-cluster --service vishwesh-java-task-service-qa --force-new-deployment
-                            """
+                            sh "aws ecs update-service --cluster vishwesh-fargate-cluster --service vishwesh-java-task-service-qa --force-new-deployment"
                         } else if (BRANCH_NAME == 'verification') {
-                            sh """
-                                aws ecs update-service --cluster vishwesh-fargate-cluster --service vishwesh-java-task-service-verification --force-new-deployment
-                            """
+                            sh "aws ecs update-service --cluster vishwesh-fargate-cluster --service vishwesh-java-task-service-verification --force-new-deployment"
                         } else {
                             echo "Deploying branch '${BRANCH_NAME}' to default service"
-                            sh """
-                                aws ecs update-service --cluster vishwesh-fargate-cluster --service vishwesh-service --force-new-deployment
-                            """
+                            sh "aws ecs update-service --cluster vishwesh-fargate-cluster --service vishwesh-service --force-new-deployment"
                         }
                     }
                 }
@@ -99,11 +93,10 @@ pipeline {
 
     post {
         success {
-            echo "Build and deployment completed successfully!"
+            echo " Build and deployment completed successfully with image tag: ${IMAGE_TAG}"
         }
         failure {
             echo "Build or deployment failed. Check logs!"
         }
     }
 }
-
