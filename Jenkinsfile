@@ -14,6 +14,16 @@ pipeline {
             }
         }
 
+        stage('Set Version') {
+            steps {
+                script {
+                    def version = sh(script: "cat version.json | jq -r '.version'", returnStdout: true).trim()
+                    echo "Project version found: ${version}"
+                    env.IMAGE_TAG = version
+                }
+            }
+        }
+
         // stage('Build and Test with Coverage') {
         //     steps {
         //         sh 'mvn clean test jacoco:report'
@@ -96,3 +106,4 @@ pipeline {
         }
     }
 }
+
