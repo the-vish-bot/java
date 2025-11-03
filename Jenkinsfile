@@ -3,7 +3,6 @@ pipeline {
     environment {
         AWS_DEFAULT_REGION = 'us-east-2'
         ECR_REPO = '042769662414.dkr.ecr.us-east-2.amazonaws.com/vishwesh/java'
-        IMAGE_TAG = "${BUILD_NUMBER}"
     }
     stages {
         stage('Checkout') {
@@ -17,25 +16,18 @@ pipeline {
         stage('Set Version') {
             steps {
                 script {
+                    // Read version from version.json
                     def version = sh(script: "cat version.json | jq -r '.version'", returnStdout: true).trim()
                     echo "Project version found: ${version}"
-                    env.IMAGE_TAG = version
+                    
+                    // Optionally append build number for uniqueness
+                    env.IMAGE_TAG = "${version}-${BUILD_NUMBER}"
+                    // Or use just the version: env.IMAGE_TAG = version
+                    
+                    echo "Image will be tagged as: ${env.IMAGE_TAG}"
                 }
             }
         }
-
-        // stage('Build and Test with Coverage') {
-        //     steps {
-        //         sh 'mvn clean test jacoco:report'
-        //     }
-        // }
-
-        // stage('Publish Coverage Report') {
-        //     steps {
-        //         publishCoverage adapters: [jacocoAdapter('**/target/site/jacoco/jacoco.xml')], 
-        //                         sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
-        //     }
-        // }
 
         stage('Build JAR') {
             steps {
@@ -53,7 +45,7 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh "docker build -t samplejava:${IMAGE_TAG} ."
+                sh "docker build -t samplejava:${env.IMAGE_TAG} ."
             }
         }
 
@@ -62,8 +54,8 @@ pipeline {
                 withAWS(credentials: 'aws-credentials-id', region: "${AWS_DEFAULT_REGION}") {
                     sh """
                         aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${ECR_REPO}
-                        docker tag samplejava:${IMAGE_TAG} ${ECR_REPO}:${IMAGE_TAG}
-                        docker push ${ECR_REPO}:${IMAGE_TAG}
+                        docker tag samplejava:${env.IMAGE_TAG} ${ECR_REPO}:${env.IMAGE_TAG}
+                        docker push ${ECR_REPO}:${env.IMAGE_TAG}
                     """
                 }
             }
@@ -85,6 +77,10 @@ pipeline {
                             sh """
                                 aws ecs update-service --cluster vishwesh-fargate-cluster --service vishwesh-java-task-service-verification --force-new-deployment
                             """
+                        } else if (BRANCH_NAME == 'main') {
+                            sh """
+                                aws ecs update-service --cluster vishwesh-fargate-cluster --service vishwesh-java-task-service-production --force-new-deployment
+                            """
                         } else {
                             echo "Deploying branch '${BRANCH_NAME}' to default service"
                             sh """
@@ -100,10 +96,10 @@ pipeline {
     post {
         success {
             echo "Build and deployment completed successfully!"
+            echo "Docker image: ${ECR_REPO}:${env.IMAGE_TAG}"
         }
         failure {
             echo "Build or deployment failed. Check logs!"
         }
     }
 }
-
