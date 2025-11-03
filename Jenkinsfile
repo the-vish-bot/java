@@ -13,6 +13,17 @@ pipeline {
                 }
             }
         }
+                stage('Build and Test with Coverage') {
+            steps {
+                sh 'mvn clean test jacoco:report'
+            }
+        }
+        stage('Publish Coverage Report') {
+            steps {
+                publishCoverage adapters: [jacocoAdapter('**/target/site/jacoco/jacoco.xml')], 
+                                sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
+            }
+        }
         stage('Build JAR') {
             steps {
                 sh 'mvn clean package -DskipTests'
