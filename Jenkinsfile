@@ -3,7 +3,6 @@ pipeline {
     environment {
         AWS_DEFAULT_REGION = 'us-east-2'
         ECR_REPO = '042769662414.dkr.ecr.us-east-2.amazonaws.com/vishwesh/java'
-        TEAMS_WEBHOOK = 'https://default5282d36903d74be586b29fa72a09d5.5b.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/3e14992b564847b3af00ef50b0069153/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=ZdGtyVXaAkoy9WCuR8-1fB13QTJUr-yJUV3B9dKhke0'
     }
     stages {
         stage('Checkout') {
@@ -21,8 +20,9 @@ pipeline {
                     def version = sh(script: "cat version.json | jq -r '.version'", returnStdout: true).trim()
                     echo "Project version found: ${version}"
                     
-                    // Optionally append build number for uniqueness
+                    
                     env.IMAGE_TAG = "${version}-${BUILD_NUMBER}"
+                    
                     
                     echo "Image will be tagged as: ${env.IMAGE_TAG}"
                 }
@@ -77,11 +77,7 @@ pipeline {
                             sh """
                                 aws ecs update-service --cluster vishwesh-fargate-cluster --service vishwesh-java-task-service-verification --force-new-deployment
                             """
-                        } else if (BRANCH_NAME == 'main') {
-                            sh """
-                                aws ecs update-service --cluster vishwesh-fargate-cluster --service vishwesh-java-task-service-production --force-new-deployment
-                            """
-                        } else {
+                        }  else {
                             echo "Deploying branch '${BRANCH_NAME}' to default service"
                             sh """
                                 aws ecs update-service --cluster vishwesh-fargate-cluster --service vishwesh-service --force-new-deployment
@@ -95,65 +91,11 @@ pipeline {
 
     post {
         success {
-            script {
-                echo "Build and deployment completed successfully!"
-                echo "Docker image: ${ECR_REPO}:${env.IMAGE_TAG}"
-                
-                sh """
-                    curl -X POST '${TEAMS_WEBHOOK}' \
-                    -H 'Content-Type: application/json' \
-                    -d '{
-                        "title": "✅ Pipeline SUCCESS",
-                        "text": "Build and deployment completed successfully!",
-                        "job": "${env.JOB_NAME}",
-                        "buildNumber": "${env.BUILD_NUMBER}",
-                        "branch": "${BRANCH_NAME}",
-                        "imageTag": "${env.IMAGE_TAG}",
-                        "status": "SUCCESS",
-                        "color": "Good",
-                        "buildUrl": "${env.BUILD_URL}"
-                    }'
-                """
-            }
+            echo "Build and deployment completed successfully!"
+            echo "Docker image: ${ECR_REPO}:${env.IMAGE_TAG}"
         }
         failure {
-            script {
-                echo "Build or deployment failed. Check logs!"
-                
-                sh """
-                    curl -X POST '${TEAMS_WEBHOOK}' \
-                    -H 'Content-Type: application/json' \
-                    -d '{
-                        "title": "❌ Pipeline FAILED",
-                        "text": "Build or deployment failed. Please check the logs!",
-                        "job": "${env.JOB_NAME}",
-                        "buildNumber": "${env.BUILD_NUMBER}",
-                        "branch": "${BRANCH_NAME}",
-                        "status": "FAILED",
-                        "color": "Attention",
-                        "buildUrl": "${env.BUILD_URL}",
-                        "consoleUrl": "${env.BUILD_URL}console"
-                    }'
-                """
-            }
-        }
-        unstable {
-            script {
-                sh """
-                    curl -X POST '${TEAMS_WEBHOOK}' \
-                    -H 'Content-Type: application/json' \
-                    -d '{
-                        "title": "⚠️ Pipeline UNSTABLE",
-                        "text": "Build completed but tests are unstable",
-                        "job": "${env.JOB_NAME}",
-                        "buildNumber": "${env.BUILD_NUMBER}",
-                        "branch": "${BRANCH_NAME}",
-                        "status": "UNSTABLE",
-                        "color": "Warning",
-                        "buildUrl": "${env.BUILD_URL}"
-                    }'
-                """
-            }
+            echo "Build or deployment failed. Check logs!"
         }
     }
 }
