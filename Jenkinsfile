@@ -20,9 +20,9 @@ pipeline {
                     def version = sh(script: "cat version.json | jq -r '.version'", returnStdout: true).trim()
                     echo "Project version found: ${version}"
                     
-                    // Optionally append build number for uniqueness
+                    
                     env.IMAGE_TAG = "${version}-${BUILD_NUMBER}"
-                    // Or use just the version: env.IMAGE_TAG = version
+                    
                     
                     echo "Image will be tagged as: ${env.IMAGE_TAG}"
                 }
@@ -77,11 +77,7 @@ pipeline {
                             sh """
                                 aws ecs update-service --cluster vishwesh-fargate-cluster --service vishwesh-java-task-service-verification --force-new-deployment
                             """
-                        } else if (BRANCH_NAME == 'main') {
-                            sh """
-                                aws ecs update-service --cluster vishwesh-fargate-cluster --service vishwesh-java-task-service-production --force-new-deployment
-                            """
-                        } else {
+                        }  else {
                             echo "Deploying branch '${BRANCH_NAME}' to default service"
                             sh """
                                 aws ecs update-service --cluster vishwesh-fargate-cluster --service vishwesh-service --force-new-deployment
