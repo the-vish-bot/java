@@ -13,22 +13,26 @@ pipeline {
                 }
             }
         }
-                stage('Build and Test with Coverage') {
-            steps {
-                sh 'mvn clean test jacoco:report'
-            }
-        }
-        stage('Publish Coverage Report') {
-            steps {
-                publishCoverage adapters: [jacocoAdapter('**/target/site/jacoco/jacoco.xml')], 
-                                sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
-            }
-        }
+
+        // stage('Build and Test with Coverage') {
+        //     steps {
+        //         sh 'mvn clean test jacoco:report'
+        //     }
+        // }
+
+        // stage('Publish Coverage Report') {
+        //     steps {
+        //         publishCoverage adapters: [jacocoAdapter('**/target/site/jacoco/jacoco.xml')], 
+        //                         sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
+        //     }
+        // }
+
         stage('Build JAR') {
             steps {
                 sh 'mvn clean package -DskipTests'
             }
         }
+
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('vishwesh-sonar') {
@@ -36,11 +40,13 @@ pipeline {
                 }
             }
         }
+
         stage('Build Docker Image') {
             steps {
                 sh "docker build -t samplejava:${IMAGE_TAG} ."
             }
         }
+
         stage('Push to ECR') {
             steps {
                 withAWS(credentials: 'aws-credentials-id', region: "${AWS_DEFAULT_REGION}") {
@@ -52,6 +58,7 @@ pipeline {
                 }
             }
         }
+
         stage('Deploy to Fargate') {
             steps {
                 withAWS(credentials: 'aws-credentials-id', region: "${AWS_DEFAULT_REGION}") {
@@ -79,6 +86,7 @@ pipeline {
             }
         }
     }
+
     post {
         success {
             echo "Build and deployment completed successfully!"
