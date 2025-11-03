@@ -4,16 +4,17 @@ pipeline {
     environment {
         AWS_DEFAULT_REGION = 'us-east-2'
         ECR_REPO = '042769662414.dkr.ecr.us-east-2.amazonaws.com/vishwesh/java'
-        IMAGE_TAG = "${BUILD_NUMBER}" // Unique tag for each build
+        IMAGE_TAG = "${BUILD_NUMBER}"
     }
 
     stages {
         stage('Checkout') {
             steps {
                 script {
-                    git branch: 'main', url: 'https://github.com/the-vish-bot/java.git', credentialsId: '9b5a4a1a-56c0-41a2-9947-a7708abbb720'
                     env.BRANCH_NAME = sh(script: "git rev-parse --abbrev-ref HEAD", returnStdout: true).trim()
+
                     echo "Branch name is ${env.BRANCH_NAME} and build number is ${env.BUILD_NUMBER}"
+                    
                 }
             }
         }
