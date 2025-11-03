@@ -11,6 +11,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 git branch: 'main', url: 'https://github.com/the-vish-bot/java.git', credentialsId: '9b5a4a1a-56c0-41a2-9947-a7708abbb720'
+                    echo "branch name is ${branch} and build number is ${BUILD_NUMBER}"
             }
         }
         stage('Build JAR') {
@@ -41,20 +42,33 @@ pipeline {
                 }
             }
         }
-        stage('Deploy to Fargate') {
+stage('Deploy to Fargate') {
             steps {
                 withAWS(credentials: 'aws-credentials-id', region: "${AWS_DEFAULT_REGION}") {
-                    sh """
-                        aws ecs update-service \
-                            --cluster vishwesh-fargate-cluster \
-                            --service vishwesh-service \
-                            --force-new-deployment \
-                            --region $AWS_DEFAULT_REGION
-                    """
+                    script{
+
+                        if(branch == 'development'){
+                            sh """
+                                aws ecs update-service --cluster vishwesh-fargate-cluster --service vishwesh-java-task-service-development --force-new-deployment
+                            """
+                        } else if(branch == 'qa'){
+                            sh """
+                                aws ecs update-service --cluster vishwesh-fargate-cluster --service vishwesh-java-task-service-qa --force-new-deployment
+                            """
+                        } else if(branch == 'verification'){
+                            sh """
+                                aws ecs update-service --cluster vishwesh-fargate-cluster --service vishwesh-java-task-service-verification --force-new-deployment
+                            """
+                        } else {
+                            echo "Deploying branch '${branch}' to vishwesh-service"
+                            sh """
+                                aws ecs update-service --cluster vishwesh-fargate-cluster --service vishwesh-service --force-new-deployment
+                            """
+                        }
+                    }
                 }
             }
         }
-    }
     post {
         success {
             echo "✅ Build and deployment completed successfully!"
