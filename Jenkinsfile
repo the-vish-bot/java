@@ -99,15 +99,21 @@ pipeline {
     }
 
     post {
+        success {
+            echo "✅ Build and deployment successful for branch ${BRANCH_NAME} - Build #${BUILD_NUMBER}"
+        }
+        failure {
+            echo "❌ Build or deployment failed for branch ${BRANCH_NAME} - Build #${BUILD_NUMBER}"
+        }
         // success {
         //     office365ConnectorSend message: "✅ Build and deployment successful!",
         //                            status: "SUCCESS",
         //                            webhookUrl: "https://novatekno.webhook.office.com/webhookb2/1342fad1-c702-4867-ab8f-b65b4ac1f960@5282d369-03d7-4be5-86b2-9fa72a09d55b/IncomingWebhook/543d1e13b2ce4a37a45fb074021ac22d/4abbc960-ba3e-43e3-bb65-9163971ff8ee/V2Zc86fhcqTRpnHx6agpMlGi4QCx95UP3qjModFocUlt01"
         // }
-        //failure {
-        //    office365ConnectorSend message: "❌ Build or deployment failed!",
-        //                           status: "FAILURE",
-        //                           webhookUrl: "https://novatekno.webhook.office.com/webhookb2/1342fad1-c702-4867-ab8f-b65b4ac1f960@5282d369-03d7-4be5-86b2-9fa72a09d55b/IncomingWebhook/543d1e13b2ce4a37a45fb074021ac22d/4abbc960-ba3e-43e3-bb65-9163971ff8ee/V2Zc86fhcqTRpnHx6agpMlGi4QCx95UP3qjModFocUlt01"
-        }
+        // failure {
+        //     office365ConnectorSend message: "❌ Build or deployment failed!",
+        //                            status: "FAILURE",
+        //                            webhookUrl: "https://novatekno.webhook.office.com/webhookb2/1342fad1-c702-4867-ab8f-b65b4ac1f960@5282d369-03d7-4be5-86b2-9fa72a09d55b/IncomingWebhook/543d1e13b2ce4a37a45fb074021ac22d/4abbc960-ba3e-43e3-bb65-9163971ff8ee/V2Zc86fhcqTRpnHx6agpMlGi4QCx95UP3qjModFocUlt01"
+        // }
     }
 }
