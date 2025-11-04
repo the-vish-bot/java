@@ -1,15 +1,17 @@
 pipeline {
     agent { label 'vish-agent' }
+
+    options {
+    skipDefaultCheckout()
+    disableConcurrentBuilds()
+    timeout(time: 1, unit: 'HOURS')
+  }
     environment {
         AWS_DEFAULT_REGION = 'us-east-2'
         ECR_REPO = '042769662414.dkr.ecr.us-east-2.amazonaws.com/vishwesh/java'
     }
 
-    options {
-    skipDefaultCheckout()
-    disableConcurrentBuilds()
-    timeout(time: 0.5, unit: 'HOURS')
-  }
+
     stages {
         stage('Checkout') {
             steps {
