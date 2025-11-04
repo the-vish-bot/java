@@ -16,14 +16,9 @@ pipeline {
         stage('Set Version') {
             steps {
                 script {
-                    // Read version from version.json
                     def version = sh(script: "cat version.json | jq -r '.version'", returnStdout: true).trim()
                     echo "Project version found: ${version}"
-                    
-                    
                     env.IMAGE_TAG = "${version}-${BUILD_NUMBER}"
-                    
-                    
                     echo "Image will be tagged as: ${env.IMAGE_TAG}"
                 }
             }
@@ -77,7 +72,7 @@ pipeline {
                             sh """
                                 aws ecs update-service --cluster vishwesh-fargate-cluster --service vishwesh-java-task-service-verification --force-new-deployment
                             """
-                        }  else {
+                        } else {
                             echo "Deploying branch '${BRANCH_NAME}' to default service"
                             sh """
                                 aws ecs update-service --cluster vishwesh-fargate-cluster --service vishwesh-service --force-new-deployment
@@ -93,9 +88,20 @@ pipeline {
         success {
             echo "Build and deployment completed successfully!"
             echo "Docker image: ${ECR_REPO}:${env.IMAGE_TAG}"
+            slackSend(
+                channel: '#alveo-devops',
+                color: 'good',
+                message: "*Build succeeded!* \n*Job:* ${env.JOB_NAME} \n*Build:* #${env.BUILD_NUMBER} \n*Image:* ${ECR_REPO}:${env.IMAGE_TAG}"
+            )
         }
+
         failure {
             echo "Build or deployment failed. Check logs!"
+            slackSend(
+                channel: '#alveo-devops',
+                color: 'danger',
+                message: "*Build failed!* \n*Job:* ${env.JOB_NAME} \n*Build:* #${env.BUILD_NUMBER} \nCheck Jenkins for details."
+            )
         }
     }
 }
